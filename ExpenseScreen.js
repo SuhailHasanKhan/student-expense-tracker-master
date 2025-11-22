@@ -8,8 +8,12 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  Alert,          // 👈 added Alert
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
+
+const PRIMARY = '#00b289';
+const TEXT_MUTED = '#9ca3af';
 
 export default function ExpenseScreen() {
   const db = useSQLiteContext();
@@ -18,60 +22,119 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
-  const [filter, setFilter] = useState('ALL');    
-  const [editingId, setEditingId] = useState(null);
+  const [filter, setFilter] = useState('ALL');      // 'ALL' | 'WEEK' | 'MONTH'
+  const [editingId, setEditingId] = useState(null); // null when not editing
 
+  // Get today's date as "YYYY-MM-DD"
   const getTodayString = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0'); 
-  const day = String(today.getDate()).padStart(2, '0');       
-  return `${year}-${month}-${day}`;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
+  // Load all expenses from SQLite
   const loadExpenses = async () => {
-    const rows = await db.getAllAsync(
-      'SELECT * FROM expenses ORDER BY id DESC;'
-    );
-    setExpenses(rows);
+    try {
+      const rows = await db.getAllAsync(
+        'SELECT * FROM expenses ORDER BY id DESC;'
+      );
+      setExpenses(rows);
+    } catch (err) {
+      console.error('Error loading expenses:', err);
+      Alert.alert('Error', 'Failed to load expenses from the database.');
+    }
   };
+
+  // Add a new expense OR update an existing one
   const handleSaveExpense = async () => {
+    // 1) Basic field checks
+    if (!amount.trim()) {
+      Alert.alert('Missing amount', 'Please enter an amount before saving.');
+      return;
+    }
+    if (!category.trim()) {
+      Alert.alert('Missing category', 'Please enter a category before saving.');
+      return;
+    }
+
     const amountNumber = parseFloat(amount);
 
+    // 2) Validate numeric amount
     if (isNaN(amountNumber) || amountNumber <= 0) {
+      Alert.alert('Invalid amount', 'Amount must be a number greater than 0.');
       return;
     }
 
     const trimmedCategory = category.trim();
     const trimmedNote = note.trim();
 
-    if (!trimmedCategory) {
-      return;
-    }
-
+    // 3) Keep date when editing; otherwise use today
     const existing = expenses.find((e) => e.id === editingId);
     const dateToUse = existing?.date || getTodayString();
 
-    if (editingId === null) {
-      await db.runAsync(
-        'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
-        [amountNumber, trimmedCategory, trimmedNote || null, dateToUse]
+    try {
+      if (editingId === null) {
+        // INSERT
+        await db.runAsync(
+          'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
+          [amountNumber, trimmedCategory, trimmedNote || null, dateToUse]
+        );
+      } else {
+        // UPDATE
+        await db.runAsync(
+          'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
+          [amountNumber, trimmedCategory, trimmedNote || null, dateToUse, editingId]
+        );
+      }
+
+      // 4) Reset form + exit edit mode
+      setAmount('');
+      setCategory('');
+      setNote('');
+      setEditingId(null);
+
+      // 5) Reload list
+      loadExpenses();
+    } catch (err) {
+      console.error('Error saving expense:', err);
+
+      // Very likely cause if you ran the app before adding `date`:
+      // existing DB table doesn’t have a `date` column.
+      Alert.alert(
+        'Save failed',
+        'Saving the expense failed. If you see an error like "no such column: date" in Metro, you need to reset the app database (uninstall app or clear data) so the new table schema with the date column is used.'
       );
-    } else {
-      await db.runAsync(
-        'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
-        [amountNumber, trimmedCategory, trimmedNote || null, dateToUse, editingId]
-      );
-    } 
-  
-    setAmount('');
-    setCategory('');
-    setNote('');
-    setEditingId(null);
-    
-    loadExpenses();
+    }
   };
 
+  // Delete expense and cancel edit if needed
+  const deleteExpense = async (id) => {
+    if (editingId === id) {
+      setEditingId(null);
+      setAmount('');
+      setCategory('');
+      setNote('');
+    }
+    try {
+      await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
+      loadExpenses();
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+      Alert.alert('Error', 'Failed to delete expense.');
+    }
+  };
+
+  // Load a row into the form for editing
+  const startEditExpense = (expense) => {
+    setEditingId(expense.id);
+    setAmount(String(expense.amount));
+    setCategory(expense.category);
+    setNote(expense.note || '');
+  };
+
+  // Filter expenses by All / This Week / This Month
   const getFilteredExpenses = () => {
     if (filter === 'ALL') {
       return expenses;
@@ -92,29 +155,32 @@ export default function ExpenseScreen() {
 
     if (filter === 'WEEK') {
       const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay()); 
+      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
       endOfWeek.setHours(23, 59, 59, 999);
 
       return expenses.filter((exp) => {
         if (!exp.date) return false;
         const d = new Date(exp.date);
         return d >= startOfWeek && d <= endOfWeek;
-
-      });    
+      });
     }
+
     return expenses;
   };
 
   const filteredExpenses = getFilteredExpenses();
 
+  // Overall total for current filter
   const totalSpending = filteredExpenses.reduce(
-    (acc, exp) => acc + Number(exp.amount || 0), 0
+    (acc, exp) => acc + Number(exp.amount || 0),
+    0
   );
 
+  // Totals by category for current filter
   const categoryTotals = {};
   filteredExpenses.forEach((exp) => {
     const cat = exp.category || 'Uncategorized';
@@ -125,26 +191,8 @@ export default function ExpenseScreen() {
     categoryTotals[cat] += amt;
   });
 
-  const filterLabel = filter === 'ALL' ? 'All' : filter === 'WEEK' ? 'This Week' : 'This Month';
-
-  const deleteExpense = async (id) => {
-    if (editingId === id) {
-      setEditingId(null);
-      setAmount('');
-      setCategory('');
-      setNote('');
-    }
-    await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
-    loadExpenses();
-  };
-
-  const startEditExpense = (expense) => {
-    setEditingId(expense.id);
-    setAmount(String(expense.amount));
-    setCategory(expense.category);
-    setNote(expense.note || '');
-  };
-
+  const filterLabel =
+    filter === 'ALL' ? 'All' : filter === 'WEEK' ? 'This Week' : 'This Month';
 
   const renderExpense = ({ item }) => (
     <View style={styles.expenseRow}>
@@ -156,6 +204,9 @@ export default function ExpenseScreen() {
         {item.note ? (
           <Text style={styles.expenseNote}>{item.note}</Text>
         ) : null}
+        {item.date ? (
+          <Text style={styles.expenseNote}>Date: {item.date}</Text>
+        ) : null}
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => deleteExpense(item.id)}>
@@ -166,17 +217,22 @@ export default function ExpenseScreen() {
 
   useEffect(() => {
     async function setup() {
-      await db.execAsync(`
-        CREATE TABLE IF NOT EXISTS expenses (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          amount REAL NOT NULL,
-          category TEXT NOT NULL,
-          note TEXT,
-          date TEXT NOT NULL
-        );
-      `);
+      try {
+        await db.execAsync(`
+          CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            note TEXT,
+            date TEXT NOT NULL
+          );
+        `);
 
-      await loadExpenses();
+        await loadExpenses();
+      } catch (err) {
+        console.error('Error in setup:', err);
+        Alert.alert('Error', 'Failed to set up the database.');
+      }
     }
 
     setup();
@@ -186,21 +242,40 @@ export default function ExpenseScreen() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
 
+      {/* Filter buttons */}
       <View style={styles.filterRow}>
-        <TouchableOpacity style={[styles.filterButton, filter === 'ALL' && styles.filterButtonActive,]} onPress={() => setFilter('ALL')}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === 'ALL' && styles.filterButtonActive,
+          ]}
+          onPress={() => setFilter('ALL')}
+        >
           <Text style={styles.filterButtonText}>All</Text>
-
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.filterButton, filter === 'WEEK' && styles.filterButtonActive,]} onPress={() => setFilter('WEEK')}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === 'WEEK' && styles.filterButtonActive,
+          ]}
+          onPress={() => setFilter('WEEK')}
+        >
           <Text style={styles.filterButtonText}>This Week</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.filterButton, filter === 'MONTH' && styles.filterButtonActive,]} onPress={() => setFilter('MONTH')}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            filter === 'MONTH' && styles.filterButtonActive,
+          ]}
+          onPress={() => setFilter('MONTH')}
+        >
           <Text style={styles.filterButtonText}>This Month</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Summary card */}
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>
           Total Spending ({filterLabel}):
@@ -223,6 +298,7 @@ export default function ExpenseScreen() {
         )}
       </View>
 
+      {/* Form */}
       <View style={styles.form}>
         <TextInput
           style={styles.input}
@@ -249,34 +325,29 @@ export default function ExpenseScreen() {
           onChangeText={setNote}
         />
 
-        <View style={styles.primaryButton}>
-          <Button
-            title={editingId === null ? 'Add Expense' : 'Save Changes'}
-            color={PRIMARY}
-            onPress={handleSaveExpense}
-          />
-          {editingId !== null && (
-            <View style={{ marginTop: 8 }}>
-              <View style={styles.secondaryButton}>
-                <Button
-                  title="Cancel Edit"
-                  color={TEXT_MUTED}
-                  onPress={() => {
-                    setEditingId(null);
-                    setAmount('');
-                    setCategory('');
-                    setNote('');
-                  }}
-                />
-              </View>
-            </View>                
-          )}
-        </View>
+        <Button
+          title={editingId === null ? 'Add Expense' : 'Save Changes'}
+          color={PRIMARY}
+          onPress={handleSaveExpense}
+        />
 
+        {editingId !== null && (
+          <View style={{ marginTop: 8 }}>
+            <Button
+              title="Cancel Edit"
+              color={TEXT_MUTED}
+              onPress={() => {
+                setEditingId(null);
+                setAmount('');
+                setCategory('');
+                setNote('');
+              }}
+            />
+          </View>
+        )}
       </View>
 
-      
-
+      {/* List */}
       <FlatList
         data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
@@ -350,7 +421,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 12,
   },
-    filterRow: {
+  filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
