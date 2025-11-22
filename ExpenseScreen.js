@@ -350,4 +350,52 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 12,
   },
+    filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    marginHorizontal: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#4b5563',
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  filterButtonText: {
+    color: '#e5e7eb',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  summaryCard: {
+    backgroundColor: '#1f2937',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  summaryTitle: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  summaryAmount: {
+    color: '#fbbf24',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  summaryCategoryLine: {
+    color: '#e5e7eb',
+    fontSize: 12,
+  },
+  summaryEmpty: {
+    color: '#6b7280',
+    fontSize: 12,
+    marginTop: 4,
+  },
 });
