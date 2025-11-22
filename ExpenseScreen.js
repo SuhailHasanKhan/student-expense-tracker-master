@@ -21,6 +21,14 @@ export default function ExpenseScreen() {
   const [filter, setFilter] = useState('ALL');    
   const [editingId, setEditingId] = useState(null);
 
+  const getTodayString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); 
+  const day = String(today.getDate()).padStart(2, '0');       
+  return `${year}-${month}-${day}`;
+  };
+
   const loadExpenses = async () => {
     const rows = await db.getAllAsync(
       'SELECT * FROM expenses ORDER BY id DESC;'
