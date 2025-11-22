@@ -110,7 +110,22 @@ export default function ExpenseScreen() {
   };
 
   const filteredExpenses = getFilteredExpenses();
-  
+
+  const totalSpending = filteredExpenses.reduce(
+    (acc, exp) => acc + Number(exp.amount || 0), 0
+  );
+
+  const categoryTotals = {};
+  filteredExpenses.forEach((exp) => {
+    const cat = exp.category || 'Uncategorized';
+    const amt = Number(exp.amount || 0);
+    if (!categoryTotals[cat]) {
+      categoryTotals[cat] = 0;
+    }
+    categoryTotals[cat] += amt;
+  });
+
+  const filterLabel = filter === 'ALL' ? 'All' : filter === 'WEEK' ? 'This Week' : 'This Month';
 
   const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
@@ -170,7 +185,7 @@ export default function ExpenseScreen() {
       </View>
 
       <FlatList
-        data={expenses}
+        data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderExpense}
         ListEmptyComponent={
