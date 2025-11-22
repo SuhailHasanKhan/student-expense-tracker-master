@@ -108,6 +108,8 @@ export default function ExpenseScreen() {
     }
     return expenses;
   };
+
+  const filteredExpenses = getFilteredExpenses();
   
 
   const deleteExpense = async (id) => {
@@ -152,30 +154,19 @@ export default function ExpenseScreen() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
 
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Amount (e.g. 12.50)"
-          placeholderTextColor="#9ca3af"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Category (Food, Books, Rent...)"
-          placeholderTextColor="#9ca3af"
-          value={category}
-          onChangeText={setCategory}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Note (optional)"
-          placeholderTextColor="#9ca3af"
-          value={note}
-          onChangeText={setNote}
-        />
-        <Button title="Add Expense" onPress={addExpense} />
+      <View style={styles.filterRow}>
+        <TouchableOpacity style={[styles.filterButton, filter === 'ALL' && styles.filterButtonActive,]} onPress={() => setFilter('ALL')}>
+          <Text style={styles.filterButtonText}>All</Text>
+
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.filterButton, filter === 'WEEK' && styles.filterButtonActive,]} onPress={() => setFilter('WEEK')}>
+          <Text style={styles.filterButtonText}>This Week</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.filterButton, filter === 'MONTH' && styles.filterButtonActive,]} onPress={() => setFilter('MONTH')}>
+          <Text style={styles.filterButtonText}>This Month</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
