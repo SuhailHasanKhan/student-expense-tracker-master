@@ -35,11 +35,10 @@ export default function ExpenseScreen() {
     );
     setExpenses(rows);
   };
-  const addExpense = async () => {
+  const handleSaveExpense = async () => {
     const amountNumber = parseFloat(amount);
 
     if (isNaN(amountNumber) || amountNumber <= 0) {
-      // Basic validation: ignore invalid or non-positive amounts
       return;
     }
 
@@ -47,22 +46,31 @@ export default function ExpenseScreen() {
     const trimmedNote = note.trim();
 
     if (!trimmedCategory) {
-      // Category is required
       return;
     }
 
-    await db.runAsync(
-      'INSERT INTO expenses (amount, category, note) VALUES (?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote || null]
-    );
+    const existing = expenses.find((e) => e.id === editingId);
+    const dateToUse = existing?.date || getTodayString();
 
+    if (editingId === null) {
+      await db.runAsync(
+        'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
+        [amountNumber, trimmedCategory, trimmedNote || null, dateToUse]
+      );
+    } else {
+      await db.runAsync(
+        'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
+        [amountNumber, trimmedCategory, trimmedNote || null, dateToUse, editingId]
+      );
+    } 
+  
     setAmount('');
     setCategory('');
     setNote('');
-
+    setEditingId(null);
+    
     loadExpenses();
   };
-
 
   const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
