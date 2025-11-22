@@ -72,6 +72,44 @@ export default function ExpenseScreen() {
     loadExpenses();
   };
 
+  const getFilteredExpenses = () => {
+    if (filter === 'ALL') {
+      return expenses;
+    }
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    const todayMonth = today.getMonth();
+
+    if (filter === 'MONTH') {
+      return expenses.filter((exp) => {
+        if (!exp.date) return false;
+        const d = new Date(exp.date);
+        return (
+          d.getFullYear() === todayYear && d.getMonth() === todayMonth
+        );
+      });
+    }
+
+    if (filter === 'WEEK') {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); 
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      return expenses.filter((exp) => {
+        if (!exp.date) return false;
+        const d = new Date(exp.date);
+        return d >= startOfWeek && d <= endOfWeek;
+
+      });    
+    }
+    return expenses;
+  };
+  
+
   const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
     loadExpenses();
