@@ -184,6 +184,28 @@ export default function ExpenseScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>
+          Total Spending ({filterLabel}):
+        </Text>
+        <Text style={styles.summaryAmount}>
+          ${totalSpending.toFixed(2)}
+        </Text>
+        <Text style={[styles.summaryTitle, { marginTop: 8 }]}>
+          By Category:
+        </Text>
+
+        {Object.keys(categoryTotals).length === 0 ? (
+          <Text style={styles.summaryEmpty}>No expenses for this range.</Text>
+        ) : (
+          Object.entries(categoryTotals).map(([cat, total]) => (
+            <Text key={cat} style={styles.summaryCategoryLine}>
+              {cat}: ${total.toFixed(2)}
+            </Text>
+          ))
+        )}
+      </View>
+
       <FlatList
         data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
