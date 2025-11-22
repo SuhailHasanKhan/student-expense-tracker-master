@@ -142,11 +142,15 @@ export default function ExpenseScreen() {
 
   const renderExpense = ({ item }) => (
     <View style={styles.expenseRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.expenseAmount}>${Number(item.amount).toFixed(2)}</Text>
+      <TouchableOpacity style={{ flex: 1 }} onPress={() => startEditExpense(item)}>
+        <Text style={styles.expenseAmount}>
+          ${Number(item.amount).toFixed(2)}
+        </Text>
         <Text style={styles.expenseCategory}>{item.category}</Text>
-        {item.note ? <Text style={styles.expenseNote}>{item.note}</Text> : null}
-      </View>
+        {item.note ? (
+          <Text style={styles.expenseNote}>{item.note}</Text>
+        ) : null}
+      </TouchableOpacity>
 
       <TouchableOpacity onPress={() => deleteExpense(item.id)}>
         <Text style={styles.delete}>✕</Text>
