@@ -243,7 +243,33 @@ export default function ExpenseScreen() {
           onChangeText={setNote}
         />
 
+        <View style={styles.primaryButton}>
+          <Button
+            title={editingId === null ? 'Add Expense' : 'Save Changes'}
+            color={PRIMARY}
+            onPress={handleSaveExpense}
+          />
+          {editingId !== null && (
+            <View style={{ marginTop: 8 }}>
+              <View style={styles.secondaryButton}>
+                <Button
+                  title="Cancel Edit"
+                  color={TEXT_MUTED}
+                  onPress={() => {
+                    setEditingId(null);
+                    setAmount('');
+                    setCategory('');
+                    setNote('');
+                  }}
+                />
+              </View>
+            </View>                
+          )}
+        </View>
+
       </View>
+
+      
 
       <FlatList
         data={filteredExpenses}
