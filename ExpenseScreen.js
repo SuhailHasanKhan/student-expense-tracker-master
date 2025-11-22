@@ -22,10 +22,10 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
-  const [filter, setFilter] = useState('ALL');      // 'ALL' | 'WEEK' | 'MONTH'
-  const [editingId, setEditingId] = useState(null); // null when not editing
+  const [filter, setFilter] = useState('ALL');      
+  const [editingId, setEditingId] = useState(null); 
 
-  // Get today's date as "YYYY-MM-DD"
+  
   const getTodayString = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -34,7 +34,7 @@ export default function ExpenseScreen() {
     return `${year}-${month}-${day}`;
   };
 
-  // Load all expenses from SQLite
+  
   const loadExpenses = async () => {
     try {
       const rows = await db.getAllAsync(
@@ -47,9 +47,8 @@ export default function ExpenseScreen() {
     }
   };
 
-  // Add a new expense OR update an existing one
   const handleSaveExpense = async () => {
-    // 1) Basic field checks
+   
     if (!amount.trim()) {
       Alert.alert('Missing amount', 'Please enter an amount before saving.');
       return;
@@ -61,7 +60,6 @@ export default function ExpenseScreen() {
 
     const amountNumber = parseFloat(amount);
 
-    // 2) Validate numeric amount
     if (isNaN(amountNumber) || amountNumber <= 0) {
       Alert.alert('Invalid amount', 'Amount must be a number greater than 0.');
       return;
@@ -70,38 +68,37 @@ export default function ExpenseScreen() {
     const trimmedCategory = category.trim();
     const trimmedNote = note.trim();
 
-    // 3) Keep date when editing; otherwise use today
+   
     const existing = expenses.find((e) => e.id === editingId);
     const dateToUse = existing?.date || getTodayString();
 
     try {
       if (editingId === null) {
-        // INSERT
+        
         await db.runAsync(
           'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
           [amountNumber, trimmedCategory, trimmedNote || null, dateToUse]
         );
       } else {
-        // UPDATE
+        
         await db.runAsync(
           'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
           [amountNumber, trimmedCategory, trimmedNote || null, dateToUse, editingId]
         );
       }
 
-      // 4) Reset form + exit edit mode
+     
       setAmount('');
       setCategory('');
       setNote('');
       setEditingId(null);
 
-      // 5) Reload list
+    
       loadExpenses();
     } catch (err) {
       console.error('Error saving expense:', err);
 
-      // Very likely cause if you ran the app before adding `date`:
-      // existing DB table doesn’t have a `date` column.
+
       Alert.alert(
         'Save failed',
         'Saving the expense failed. If you see an error like "no such column: date" in Metro, you need to reset the app database (uninstall app or clear data) so the new table schema with the date column is used.'
@@ -109,7 +106,6 @@ export default function ExpenseScreen() {
     }
   };
 
-  // Delete expense and cancel edit if needed
   const deleteExpense = async (id) => {
     if (editingId === id) {
       setEditingId(null);
@@ -126,7 +122,6 @@ export default function ExpenseScreen() {
     }
   };
 
-  // Load a row into the form for editing
   const startEditExpense = (expense) => {
     setEditingId(expense.id);
     setAmount(String(expense.amount));
@@ -134,7 +129,7 @@ export default function ExpenseScreen() {
     setNote(expense.note || '');
   };
 
-  // Filter expenses by All / This Week / This Month
+
   const getFilteredExpenses = () => {
     if (filter === 'ALL') {
       return expenses;
@@ -155,11 +150,11 @@ export default function ExpenseScreen() {
 
     if (filter === 'WEEK') {
       const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+      startOfWeek.setDate(today.getDate() - today.getDay()); 
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
+      endOfWeek.setDate(startOfWeek.getDate() + 6); 
       endOfWeek.setHours(23, 59, 59, 999);
 
       return expenses.filter((exp) => {
@@ -174,13 +169,13 @@ export default function ExpenseScreen() {
 
   const filteredExpenses = getFilteredExpenses();
 
-  // Overall total for current filter
+
   const totalSpending = filteredExpenses.reduce(
     (acc, exp) => acc + Number(exp.amount || 0),
     0
   );
 
-  // Totals by category for current filter
+  
   const categoryTotals = {};
   filteredExpenses.forEach((exp) => {
     const cat = exp.category || 'Uncategorized';
@@ -241,8 +236,6 @@ export default function ExpenseScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
-
-      {/* Filter buttons */}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={[
@@ -275,7 +268,6 @@ export default function ExpenseScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Summary card */}
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>
           Total Spending ({filterLabel}):
@@ -298,7 +290,6 @@ export default function ExpenseScreen() {
         )}
       </View>
 
-      {/* Form */}
       <View style={styles.form}>
         <TextInput
           style={styles.input}
@@ -347,7 +338,6 @@ export default function ExpenseScreen() {
         )}
       </View>
 
-      {/* List */}
       <FlatList
         data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
