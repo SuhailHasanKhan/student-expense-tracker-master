@@ -128,6 +128,12 @@ export default function ExpenseScreen() {
   const filterLabel = filter === 'ALL' ? 'All' : filter === 'WEEK' ? 'This Week' : 'This Month';
 
   const deleteExpense = async (id) => {
+    if (editingId === id) {
+      setEditingId(null);
+      setAmount('');
+      setCategory('');
+      setNote('');
+    }
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
     loadExpenses();
   };
