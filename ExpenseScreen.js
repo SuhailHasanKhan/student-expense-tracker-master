@@ -217,6 +217,34 @@ export default function ExpenseScreen() {
         )}
       </View>
 
+      <View style={styles.form}>
+        <TextInput
+          style={styles.input}
+          placeholder="Amount (e.g. 12.50)"
+          placeholderTextColor={TEXT_MUTED}
+          keyboardType="numeric"
+          value={amount}
+          onChangeText={setAmount}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Category (e.g. groceries, shopping...)"
+          placeholderTextColor={TEXT_MUTED}
+          value={category}
+          onChangeText={setCategory}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Note (optional)"
+          placeholderTextColor={TEXT_MUTED}
+          value={note}
+          onChangeText={setNote}
+        />
+
+      </View>
+
       <FlatList
         data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
