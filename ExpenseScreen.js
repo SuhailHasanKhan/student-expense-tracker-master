@@ -132,6 +132,13 @@ export default function ExpenseScreen() {
     loadExpenses();
   };
 
+  const startEditExpense = (expense) => {
+    setEditingId(expense.id);
+    setAmount(String(expense.amount));
+    setCategory(expense.category);
+    setNote(expense.note || '');
+  };
+
 
   const renderExpense = ({ item }) => (
     <View style={styles.expenseRow}>
