@@ -8,7 +8,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert,          // 👈 added Alert
+  Alert,         
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   expenseAmount: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fbbf24',
+    color: '#aaee50ff',
   },
   expenseCategory: {
     fontSize: 14,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   summaryAmount: {
-    color: '#fbbf24',
+    color: '#aaee50ff',
     fontSize: 20,
     fontWeight: '700',
     marginTop: 4,
