@@ -18,6 +18,8 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
+  const [filter, setFilter] = useState('ALL');    
+  const [editingId, setEditingId] = useState(null);
 
   const loadExpenses = async () => {
     const rows = await db.getAllAsync(
